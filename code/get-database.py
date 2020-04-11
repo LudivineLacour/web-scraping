@@ -10,8 +10,6 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 import time
-#import json
-#import unicodedata
 import pymysql
 from sqlalchemy import create_engine
 
@@ -119,11 +117,12 @@ def save_database(df):
     # drop useless columns before saving the data
     col_to_drop=['id','index','is_directory','cloudinary_public_id','exact_match']
     df=df.drop(col_to_drop,axis=1)
+    # convert top_specialities into string type
+    df.top_specialities.fillna('[]', inplace=True)
+    df.top_specialities=df.top_specialities.astype(str).convert_dtypes()
+
     # send data into the database
-    print("test21")
-    print(df.shape)
     df.to_sql('doctors', engine, if_exists='replace',index=False)
-    print("test3")
     
 if __name__=='__main__':
     get_specialities()

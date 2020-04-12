@@ -11,16 +11,40 @@ from utils import get_json, get_specialities, get_db_connexion
 import pandas as pd
 import time
 
-def get_database(specialities_slug=[]):
+def save_database(df,speciality_search,engine):
+    # Save the data in a database
+    
+    # reset index to have a unique id for each row
+    df=df.reset_index()
+    # fill nan values with top specialities
+    if 'top_specialities' in df.columns:
+        df.speciality=df.speciality.fillna(str(df['top_specialities']))
+    # If no top_specialities columns and still nan values, fill with the speciality searched
+
+    df.speciality.fillna(speciality_search, inplace=True)
+    # drop useless columns before saving the data
+    col_to_drop=['id','index','is_directory','cloudinary_public_id','exact_match','top_specialities']
+    for col in col_to_drop:
+        if col in df.columns:
+            df.drop(col, axis=1, inplace=True)
+
+    # send data into the database
+    df.to_sql('doctors', engine, if_exists='append',index=False)
+    
+
+def get_database(specialities_slug=[],list_of_specialities=[]):
+    
+    database='doctolib_scrap'
+    engine=get_db_connexion(database)
     
     # Final scrapping for all specialities
     base_url='https://www.doctolib.fr'
     location='france'
-    #speciality='stomatologue'
-    df_final=pd.DataFrame()
+    failed_db=[]
     
     for i in range(len(specialities_slug)):
         
+        df_final=pd.DataFrame()
         speciality=specialities_slug[i]
         page_num=0
         doctors=True
@@ -31,6 +55,7 @@ def get_database(specialities_slug=[]):
             page_num+=1
     
             final_url=f"{base_url}/{speciality}/{location}?page={page_num}"
+            print(f'/{speciality}/{location}?page={page_num}')
     
             result=get_json(final_url, speciality, location, page_num)
             data_doctors=result['data']['doctors']
@@ -50,30 +75,18 @@ def get_database(specialities_slug=[]):
                 data['profile_id']=-1
                 df_final=df_final.append(data)
     
-            time.sleep(0.5)
-    
-    return df_final
+            time.sleep(0.3)
+        print("Save to database")
+        try:
+            save_database(df_final,list_of_specialities[i],engine)
+            print("Saved to database")
+        except:
+            print("Failed to save in database: ", speciality)
+            failed_db.append(speciality)
+            
+    return failed_db
 
-    
-def save_database(df):
-    # Save the data in a database
-    database='doctolib_db'
-    
-    engine=get_db_connexion(database)
-    
-    # reset index to have a unique id for each row
-    df=df.reset_index()
-    # drop useless columns before saving the data
-    col_to_drop=['id','index','is_directory','cloudinary_public_id','exact_match']
-    df=df.drop(col_to_drop,axis=1)
-    # convert top_specialities into string type
-    df.top_specialities.fillna('[]', inplace=True)
-    df.top_specialities=df.top_specialities.astype(str).convert_dtypes()
-
-    # send data into the database
-    df.to_sql('doctors', engine, if_exists='replace',index=False)
 
 if __name__=='__main__':
     list_of_specialities_slug, list_of_specialities = get_specialities()
-    df=get_database(list_of_specialities_slug)
-    save_database(df)
+    failed_db = get_database(list_of_specialities_slug,list_of_specialities)

@@ -11,6 +11,7 @@ from utils import get_json, get_specialities, get_db_connexion
 import pandas as pd
 import re
 from datetime import datetime
+import time
 
 
 def get_user_search(list_of_specialities):
@@ -36,19 +37,23 @@ def get_db_results(specialities_match,location_search):
    
     database='doctolib_db'
     engine=get_db_connexion(database)
-    query='SELECT name_with_title, speciality, concat(address,", ",zipcode," ",city) as postal_address, case when doctolib_profile = 1 then "True" else "False" end as has_doctolib_profile, link FROM doctors WHERE zipcode = {} and speciality in {}'.format(location_search, specialities_match)
+    query='SELECT name_with_title, speciality, address, zipcode, city, case when doctolib_profile = 1 then "True" else "False" end as has_doctolib_profile, link FROM doctors WHERE zipcode = {} and speciality in {}'.format(location_search, specialities_match)
     db=pd.read_sql_query(query,engine)
     
     return db
 
 
-def get_next_availability(link,specialities_match,location_search):
+def get_next_availability(link):
     
-    # 1. Get enriched data for each profile (agendas_id and visit_motive_id)
-    # get the doctor_slug to put in url request
+    # get the all slugs to put in url request
     doctor_slug=link[(re.search('(.*/){2}',link).end()):]
+    pos_spe=re.search('^\/(.*?)\/',link)
+    speciality_slug=pos_spe.group(1)
+    pos_location=re.search('\/.*\/(.*?)\/',link)
+    location_slug=pos_location.group(1)
+    # 1. Get enriched data for each profile (agendas_id and visit_motive_id)
     enriched_url=f'https://www.doctolib.fr/booking/{doctor_slug}.json'
-    enriched_result=get_json(enriched_url,specialities_match,location_search,page_num=1)
+    enriched_result=get_json(enriched_url,speciality_slug,location_slug,page_num=1)
     # extract all visit_motives_id
     visit_motives="-".join(pd.json_normalize(enriched_result['data']['visit_motives'])['id'].astype(str).tolist())
     # extract all agenda_id
@@ -57,7 +62,7 @@ def get_next_availability(link,specialities_match,location_search):
     
     # 2. Get the next availability
     availability_url=f'https://www.doctolib.fr/availabilities.json?start_date={today}&visit_motive_ids={visit_motives}&agenda_ids={agendas}&limit=4'
-    availability_result=get_json(availability_url,specialities_match,location_search,page_num=1)
+    availability_result=get_json(availability_url,speciality_slug,location_slug,page_num=1)
     
     availabilities=pd.json_normalize(availability_result)
 
@@ -72,19 +77,23 @@ def get_next_availability(link,specialities_match,location_search):
 
 def doctors_availability(db):
     
-    db['next_availability']=db['link'].apply(get_next_availability)
+    doctolib_profile=db[db['has_doctolib_profile']=="True"]
     
-    return db
+    doctolib_profile = doctolib_profile.assign(next_availability = doctolib_profile.link.apply(get_next_availability).tolist())
+    
+    return doctolib_profile[['name_with_title','next_availability']]
 
 
 if __name__=='__main__':
-    print("Getting all available specialities")
     list_of_specialities_slug,list_of_specialities=get_specialities()
     specialities_match, location_search=get_user_search(list_of_specialities)
     db=get_db_results(specialities_match, location_search)
-    print("Here is the list of doctors:\n")
-    print(db)
-    print("Let's find the availabilities for doctors thanks to their doctolib profiles...")
-    final_df=doctors_availability(db)
-    print(final_df)
+    time.sleep(3)
+    if len(db)==0:
+        print("Sorry no doctors available in your location")
+    else:
+        print("Let's find the availabilities for doctors thanks to their doctolib profiles...")
+        final_df=doctors_availability(db)
+        time.sleep(3)
+        print(final_df)
     

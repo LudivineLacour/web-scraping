@@ -16,30 +16,38 @@ import time
 
 def get_user_search(list_of_specialities):
     
-    #Ask the user where they would like to consult
-    location_search=input('Where would you like to find this doctor? (please enter a zipcode)\n')
-    
     while True:
         # Ask the user what kind of doctors they are looking for
         speciality_search=input('What kind of doctor are you looking for?\n')
     
         specialities_match=tuple(i for i in list_of_specialities if re.search(speciality_search,i,re.IGNORECASE))
         if len(specialities_match)>0:
-            print('Matched specialities:', specialities_match)
+            print('Matched specialities: ', specialities_match)
             break
         else:
             print('No matching specialities. Try again.')
+            
+    #Ask the user where they would like to consult
+    location_search=input('Where would you like to find this doctor? (please enter a zipcode)\n')
         
     return specialities_match, location_search
 
 
 def get_db_results(specialities_match,location_search):
    
-    database='doctolib_db'
-    engine=get_db_connexion(database)
-    query='SELECT name_with_title, speciality, address, zipcode, city, case when doctolib_profile = 1 then "True" else "False" end as has_doctolib_profile, link FROM doctors WHERE zipcode = {} and speciality in {}'.format(location_search, specialities_match)
-    db=pd.read_sql_query(query,engine)
+    spe_match=str(specialities_match)
+    print(spe_match)
+    if len(specialities_match)==1:
+        spe_match=spe_match.replace(',','')
+    print(spe_match)    
     
+    database='doctolib_scrap'
+    engine=get_db_connexion(database)
+    
+    query='SELECT name_with_title, speciality, address, zipcode, city, case when doctolib_profile = 1 then "True" else "False" end as has_doctolib_profile, link FROM doctors WHERE zipcode = {} and speciality in {}'.format(location_search, spe_match)
+    print(query)
+    db=pd.read_sql_query(query,engine)
+    print(db)
     return db
 
 

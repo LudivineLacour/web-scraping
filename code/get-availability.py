@@ -36,18 +36,17 @@ def get_user_search(list_of_specialities):
 def get_db_results(specialities_match,location_search):
    
     spe_match=str(specialities_match)
-    print(spe_match)
+    
     if len(specialities_match)==1:
-        spe_match=spe_match.replace(',','')
-    print(spe_match)    
+        spe_match=spe_match.replace(',','')    
     
     database='doctolib_scrap'
     engine=get_db_connexion(database)
     
     query='SELECT name_with_title, speciality, address, zipcode, city, case when doctolib_profile = 1 then "True" else "False" end as has_doctolib_profile, link FROM doctors WHERE zipcode = {} and speciality in {}'.format(location_search, spe_match)
-    print(query)
+
     db=pd.read_sql_query(query,engine)
-    print(db)
+
     return db
 
 
@@ -96,7 +95,6 @@ if __name__=='__main__':
     list_of_specialities_slug,list_of_specialities=get_specialities()
     specialities_match, location_search=get_user_search(list_of_specialities)
     db=get_db_results(specialities_match, location_search)
-    time.sleep(3)
     if len(db)==0:
         print("Sorry no doctors available in your location")
     else:

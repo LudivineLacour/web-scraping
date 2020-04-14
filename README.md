@@ -37,11 +37,11 @@ Many information are available and I choose to focus on doctors, places, specili
  
  #1 A database containing a `doctors` table with all doctors names, address, speciality and, if they propose TeleHealth consultation
  
- ![database-screenshot](image/doctolib_database)
+ ![database-screenshot](image/doctolib_database.png)
  
  #2 A dataframe with the next availability for a list of doctors based on a location and a speciality
  
- ![final-dataframe](image/final_dataframe)
+ ![final-dataframe](image/final_dataframe.png)
  
  ## Challenges
  

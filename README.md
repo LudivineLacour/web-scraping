@@ -1,4 +1,4 @@
-# Doctolib web-scrapping
+# Doctolib web-scraping
  
 The objective of this project is to get a database of all existing doctors in France, for any kind of speciality to make analysis on Medicine in France.
 
@@ -8,11 +8,11 @@ Many information are available and I choose to focus on doctors, places, specili
  
  ## Process
  
- [Flowchart to come]
+ ![Flowchart to come](image/process.svg)
  
- Tools and ways of working: I made several exploration on the data retrieved from the scrapping on a jupyter notebook (exploration.pynb). Then I created a python script with functions to run the scraping and automatically savong
+ **Tools and ways of working:** I made several exploration on the data retrieved during the scraping from a jupyter notebook (exploration.pynb). Then I created a python script with functions to run the different pipeline.
  
- ## Python concepts used in the web-scrapping
+ ## Python concepts used in the web-scraping
  
  Librairies used:
  - pandas
